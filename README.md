@@ -267,3 +267,335 @@ DB=mongodb+srv://esetekaro_db_user:YOUR_PASSWORD@cluster0.yinhdht.mongodb.net/to
 🚀 Server running on port 5000
 ✅ Database connected successfully
 ```
+**Test Backend code without Frontend using Restful API**
+
+You shall see a message 'Database connected successfully, if so - we have our backend configured. Now we are going to test it. Testing Backend Code without Frontend using RESTful API So far we have written backend part of our to-do application, and configured a database, but we do not have a frontend Ul yet. We need ReactS code to achieve that. But during development, we will need a way to test our code using RESTfulL API. Therefore, we will need to make use of some API development client to test our code. 
+
+In this project, we will use Postman to test our API. Click Install Postman to download and install postman on your machine. 
+
+Click [**HERE**](https://youtu.be/UGZsOlNiVCI?si=OQV48aBxVbXV7iL7) to learn how perform [**CRUD operations on Postman**](https://medium.com/@austejamitz/postman-test-crud-operations-of-a-rest-api-1716bca21a62) You should test all the API endpoints and make sure they are working. For the endpoints that require body, you should send JSON back with the necessary fields since it's what we setup in our code. 
+
+Now open your Postman, create a POST request to the API http://«PublicIP.or-PublicONS>:5000/api/todos. 
+
+This request sends a new task to our To-Do list so the application could store it in the database.
+
+NOTE: Your headers is marked content-Type as application/json
+
+- Postman will be used to test our API.
+- Open Postman to create POST request to the API using [http://Your-IP:5000/api/todos](http://18.216.223.201:5000/api/todos)
+- Set Key to Content-Type and Value to application/json
+- This will return status: 200 Ok, if it was successfully posted.
+- Create a GET request to your API using http://18.216.223.201:5000/api/todos, which displays all existing records from the database.
+- Do same for DELETE request - To delete a task - you need to send its ID as a part of DELETE request.
+
+**Frontend Creation**
+
+- Since we are done with the functionality we want from our backend and API, it is time to create a user interface for a Web client (browser) to interact with the application via API.
+- We will use the create-react-app command npx create-react-app client to scaffold the app.
+- start your instance on new tab, in the Todo directory to create react app by running the code
+- In the Todo directory, run `npx create-react-app client`.
+- Create a folder in the Todo directory called client where all react code will be added.
+
+
+**RUN REACT APP**
+
+- Before testing the react app, some dependencies needs to be installed.
+- Install concurrently `npm install concurrently --save-dev`. It is used to run more than one command simultaneously from the same terminal window.
+- Install nodemon `npm install nodemon --save-dev`. It is used to run and monitor the server. If there is any change in the server code, nodemon will restart it automatically and load the new changes.
+- In Todo folder, open the package.json file, the section containing "scripts":{..} should be replaced with the code, 
+- list and see first then
+- `vim package.json`
+
+```
+"scripts": {
+  "start": "node index.js",
+  "start-watch": "nodemon index.js",
+  "dev": "concurrently \"npm run start-watch\" \"cd client && npm start\""
+}
+```
+- Configure proxy on package.json
+- Change directory to 'client' directory and open package.json `vi package.json`.
+- Add the key value pair "proxy":  `"<http://localhost:5000>"` to the package.json file. cat the file `cat package.json` to see
+- The purpose of adding the proxy configuration is to make it possible to access the application directly from the browser using [http://localhost:5000](http://localhost:5000/) rather than the including the entire path like http://localhost:5000/api/todos.
+- change directory to the Todo directory and run `npm run dev` .
+- To be able to access the application from the internet, open TCP port 3000 on EC2 by adding a new security group.
+- To confirm if address is working, run [http://Your-IP:3000/]
+- You sould see a page showing the react logo
+
+**Creating React Components**
+
+- Advantage of react is that it makes use of components, which are reusable and also makes code modular.
+- There will be two stateful components and one stateless component.
+- From the Todo directory run `cd client` and move to src folder  `cd src`, create another folder called components `mkdir components`.
+- Move into components folder `cd components`.
+- Inside the components directory create three files `touch files Input.js ListTodo.js Todo.js`.
+- vim Input.js file and paste the code below
+- 
+
+```jsx
+import React, { Component } from 'react';
+import axios from 'axios';
+
+class Input extends Component {
+  state = {
+    action: ''
+  };
+
+  // Handle input change
+  handleChange = (e) => {
+    this.setState({ action: e.target.value });
+  };
+
+  // Handle adding a todo
+  addTodo = () => {
+    const { action } = this.state;
+    if (action.trim()) {
+      axios.post('/api/todos', { action })
+        .then(res => {
+          console.log(res.data); // You can also call a parent callback to update the list
+          this.setState({ action: '' }); // Clear input
+        })
+        .catch(err => console.log(err));
+    } else {
+      console.log('Input field required');
+    }
+  };
+
+  render() {
+    return (
+      <div>
+        <input
+          type="text"
+          value={this.state.action}
+          onChange={this.handleChange}
+          placeholder="Enter a todo"
+        />
+        <button onClick={this.addTodo}>Add Todo</button>
+      </div>
+    );
+  }
+}
+
+export default Input;
+
+```
+
+- To make use of Axios, which is a Promise based HTTP client for the browser and node.js.
+- Move to src folder, to clients folder and install Axios `npm install axios`.
+- Go to component directory `cd src/components`.
+- Open ListTodo.js `vi ListTodo.js` and paste the following code.
+
+```jsx
+import React from 'react';
+
+const ListTodo = ({ todos, deleteTodo }) => {
+  return (
+    <ul>
+      {todos && todos.length > 0 ? (
+        todos.map(todo => (
+          <li key={todo._id} onClick={() => deleteTodo(todo._id)}>
+            {todo.action}
+          </li>
+        ))
+      ) : (
+        <li>No todo(s) left</li>
+      )}
+    </ul>
+  );
+};
+
+export default ListTodo;
+
+```
+
+- Then in your Todo.js file you write the following code
+
+```jsx
+import React, { Component } from 'react';
+import axios from 'axios';
+import Input from './Input';
+import ListTodo from './ListTodo';
+
+class Todo extends Component {
+  state = {
+    todos: []
+  };
+
+  // Fetch todos when component mounts
+  componentDidMount() {
+    this.getTodos();
+  }
+
+  // Get all todos from backend
+  getTodos = () => {
+    axios.get('/api/todos')
+      .then(res => {
+        if (res.data) {
+          this.setState({ todos: res.data });
+        }
+      })
+      .catch(err => console.log(err));
+  };
+
+  // Delete a todo by ID
+  deleteTodo = (id) => {
+    axios.delete(`/api/todos/${id}`)
+      .then(res => {
+        if (res.data) {
+          this.getTodos(); // Refresh the list after deleting
+        }
+      })
+      .catch(err => console.log(err));
+  };
+
+  render() {
+    const { todos } = this.state;
+
+    return (
+      <div>
+        <h1>My Todo(s)</h1>
+        <Input getTodos={this.getTodos} />
+        <ListTodo todos={todos} deleteTodo={this.deleteTodo} />
+      </div>
+    );
+  }
+}
+
+export default Todo;
+
+```
+
+- Move to the src folder and open App.js and copy and paste the code below.
+
+```jsx
+import React from 'react';
+import Todo from './components/Todo';
+import './App.css';
+
+const App = () => {
+  return (
+    <div className="App">
+      <Todo />
+    </div>
+  );
+};
+
+export default App;
+
+```
+
+- In the src directory open the App.css `vi App.css` and paste the following code.
+
+```jsx
+.App {
+  text-align: center;
+  font-size: calc(10px + 2vmin);
+  width: 60%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+input {
+  height: 40px;
+  width: 50%;
+  border: none;
+  border-bottom: 2px #101113 solid;
+  background: none;
+  font-size: 1.5rem;
+  color: #787a80;
+}
+
+input:focus {
+  outline: none;
+}
+
+button {
+  width: 25%;
+  height: 45px;
+  border: none;
+  margin-left: 10px;
+  font-size: 25px;
+  background: #101113;
+  border-radius: 5px;
+  color: #787a80;
+  cursor: pointer;
+}
+
+button:focus {
+  outline: none;
+}
+
+ul {
+  list-style: none;
+  text-align: left;
+  padding: 15px;
+  background: #171a1f;
+  border-radius: 5px;
+}
+
+li {
+  padding: 15px;
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  background: #282c34;
+  border-radius: 5px;
+  overflow-wrap: break-word;
+  cursor: pointer;
+}
+
+@media only screen and (min-width: 300px) {
+  .App {
+    width: 80%;
+  }
+
+  input {
+    width: 100%;
+  }
+
+  button {
+    width: 100%;
+    margin-top: 15px;
+    margin-left: 0;
+  }
+}
+
+@media only screen and (min-width: 640px) {
+  .App {
+    width: 60%;
+  }
+
+  input {
+    width: 50%;
+  }
+
+  button {
+    width: 30%;
+    margin-left: 10px;
+    margin-top: 0;
+  }
+}
+
+```
+
+- In the src directory open the index.css `vim index.css` and copy and paste the code below:
+
+```jsx
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", "Ubuntu", "Cantarell", "Fira Sans", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+  background-color: #282034;
+  color: #787a80;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+```
+
+- Go to the Todo directory and run `npm run dev`.
+- Assuming there are no error , it should work properly.
