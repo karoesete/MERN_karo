@@ -1,8 +1,6 @@
 
 # MERN STACK IMPLEMENTATION
 
-## IMPLE TO-DO APPLICATION ON MERN WEB STACK
-
 ## SIMPLE TO-DO APPLICATION ON MERN WEB STACK
 
 *Task of the project to implement a web solution based MERN stack in AWS cloud.*
